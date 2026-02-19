@@ -1,0 +1,20 @@
+# Streamlit UI
+streamlit==1.27.0
+
+# PDF generation
+fpdf==1.7.2
+
+# Maps and location
+geopy==2.4.0
+folium==0.14.0
+geocoder==1.38.1
+
+# Image handling
+Pillow==10.0.0
+
+# PyTorch CPU version
+torch==2.0.1+cpu
+torchvision==0.15.2+cpu
+
+# Whisper (voice-to-text)
+openai-whisper @ git+https://github.com/openai/whisper.git
