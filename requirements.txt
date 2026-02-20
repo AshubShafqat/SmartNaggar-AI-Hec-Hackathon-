@@ -1,36 +1,36 @@
 # Core Framework
-streamlit==1.29.0
+streamlit
 
 # Supabase Database
-supabase==2.3.0
-postgrest==0.13.0
+supabase
+postgrest
 
 # AI/ML Libraries
-torch==2.1.0
-torchvision==0.16.0
-openai-whisper==20231117
-scikit-learn==1.3.2
+torch
+torchvision
+openai-whisper
+scikit-learn
 
 # PDF Generation
-fpdf==1.7.2
+fpdf
 
 # Image Processing
-Pillow==10.1.0
+Pillow
 
 # Maps and Location
-geopy==2.4.0
-folium==0.15.0
-streamlit-folium==0.15.0
+geopy
+folium
+streamlit-folium
 
 # Data Processing
-pandas==2.1.3
-numpy==1.26.2
+pandas
+numpy
 
 # Visualization
-plotly==5.18.0
+plotly
 
 # HTTP Requests
-requests==2.31.0
+requests
 
 # Additional utilities
-python-dotenv==1.0.0
+python-dotenv
