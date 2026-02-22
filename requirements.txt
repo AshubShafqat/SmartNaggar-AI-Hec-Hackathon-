@@ -5,10 +5,12 @@ streamlit
 supabase
 postgrest
 
+# Groq AI API
+groq
+
 # AI/ML Libraries
 torch
 torchvision
-openai-whisper
 scikit-learn
 
 # PDF Generation
@@ -37,3 +39,5 @@ pycountry
 
 # Additional utilities
 python-dotenv
+
+imageio-ffmpeg

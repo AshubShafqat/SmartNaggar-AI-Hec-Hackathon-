@@ -4,7 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -13,17 +13,15 @@ from utils.supabase_client import SupabaseDB
 from utils.auth import require_admin_auth
 from utils.notifications import get_notification_service
 
-# ----------------------------
-# PAGE CONFIG
-# ----------------------------
+# ─── Page config ─────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Admin Dashboard - SmartNaggar AI",
     layout="wide",
     page_icon="🔐",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# Custom CSS
+# ─── CSS ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     .admin-header {
@@ -54,35 +52,29 @@ st.markdown("""
         font-weight: bold;
         font-size: 0.85em;
     }
-    .pending { background: #fff3cd; color: #856404; }
-    .under-review { background: #cfe2ff; color: #084298; }
-    .assigned { background: #d1e7dd; color: #0f5132; }
-    .in-progress { background: #cff4fc; color: #055160; }
-    .resolved { background: #d1e7dd; color: #0a3622; }
-    .rejected { background: #f8d7da; color: #842029; }
+    .pending        { background: #fff3cd; color: #856404; }
+    .under-review   { background: #cfe2ff; color: #084298; }
+    .assigned       { background: #d1e7dd; color: #0f5132; }
+    .in-progress    { background: #cff4fc; color: #055160; }
+    .resolved       { background: #d1e7dd; color: #0a3622; }
+    .rejected       { background: #f8d7da; color: #842029; }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------------------
-# AUTHENTICATION
-# ----------------------------
+# ─── Authentication ───────────────────────────────────────────────────────────
 auth = require_admin_auth()
 
-# ----------------------------
-# INITIALIZE SERVICES
-# ----------------------------
+# ─── Services ─────────────────────────────────────────────────────────────────
 @st.cache_resource
 def init_services():
     return {
-        'db': SupabaseDB(),
-        'notifier': get_notification_service()
+        'db':       SupabaseDB(),
+        'notifier': get_notification_service(),
     }
 
 services = init_services()
 
-# ----------------------------
-# HEADER
-# ----------------------------
+# ─── Header ───────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="admin-header">
     <h1>🔐 Admin Dashboard</h1>
@@ -90,108 +82,82 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ----------------------------
-# SIDEBAR
-# ----------------------------
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(f"### 👤 Logged in as: **{auth.get_current_user()}**")
-    
+    # FIX 1: was auth.get_current_user() — method didn't exist on AdminAuth.
+    #         Correct method is get_current_admin(). We now show the admin name,
+    #         not the raw dict, to avoid printing the entire dict as a string.
+    admin_info = auth.get_current_admin()
+    admin_display = admin_info.get('name', admin_info.get('username', 'Admin')) if admin_info else 'Admin'
+    st.markdown(f"### 👤 Logged in as: **{admin_display}**")
+    if admin_info:
+        st.caption(f"Role: {admin_info.get('role', '').title()}  |  {admin_info.get('email', '')}")
+
     if st.button("🚪 Logout", use_container_width=True):
         auth.logout()
         st.rerun()
-    
+
     st.markdown("---")
-    
-    # Navigation
+
     page = st.radio(
         "Navigation",
         ["📊 Dashboard", "📋 Manage Complaints", "📈 Analytics", "⚙️ Settings"],
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
-    
+
     st.markdown("---")
-    
-    # Quick Stats
+
     st.markdown("### 📊 Quick Stats")
     stats = services['db'].get_complaint_stats()
     st.metric("Total Complaints", stats.get('total', 0))
-    st.metric("Pending", stats.get('by_status', {}).get('Pending', 0))
-    st.metric("Resolved", stats.get('by_status', {}).get('Resolved', 0))
+    st.metric("Pending",          stats.get('by_status', {}).get('Pending', 0))
+    st.metric("Resolved",         stats.get('by_status', {}).get('Resolved', 0))
 
-# ----------------------------
-# DASHBOARD PAGE
-# ----------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+#  DASHBOARD
+# ══════════════════════════════════════════════════════════════════════════════
 if page == "📊 Dashboard":
     st.header("📊 Dashboard Overview")
-    
-    # Get statistics
+
     stats = services['db'].get_complaint_stats()
-    
-    # Metrics Row
+
     col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.markdown(f"""
+    total    = stats.get('total', 0)
+    pending  = stats.get('by_status', {}).get('Pending', 0)
+    in_prog  = stats.get('by_status', {}).get('In Progress', 0)
+    resolved = stats.get('by_status', {}).get('Resolved', 0)
+    res_rate = (resolved / total * 100) if total > 0 else 0.0
+
+    for col, value, label, color in [
+        (col1, total,           "Total Complaints", "#667eea"),
+        (col2, pending,         "Pending",          "#f5a623"),
+        (col3, in_prog,         "In Progress",      "#4a90e2"),
+        (col4, resolved,        "Resolved",         "#7ed321"),
+        (col5, f"{res_rate:.1f}%", "Resolution Rate", "#50e3c2"),
+    ]:
+        col.markdown(f"""
         <div class="metric-card">
-            <h3 style="color: #667eea;">{stats.get('total', 0)}</h3>
-            <p>Total Complaints</p>
+            <h3 style="color:{color};">{value}</h3>
+            <p>{label}</p>
         </div>
         """, unsafe_allow_html=True)
-    
-    with col2:
-        pending = stats.get('by_status', {}).get('Pending', 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #f5a623;">{pending}</h3>
-            <p>Pending</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        in_progress = stats.get('by_status', {}).get('In Progress', 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #4a90e2;">{in_progress}</h3>
-            <p>In Progress</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        resolved = stats.get('by_status', {}).get('Resolved', 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #7ed321;">{resolved}</h3>
-            <p>Resolved</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col5:
-        total = stats.get('total', 0)
-        resolution_rate = (resolved / total * 100) if total > 0 else 0
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #50e3c2;">{resolution_rate:.1f}%</h3>
-            <p>Resolution Rate</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
+
     st.markdown("---")
-    
-    # Charts Row
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.subheader("📊 Complaints by Status")
         if stats.get('by_status'):
             fig = px.pie(
                 values=list(stats['by_status'].values()),
                 names=list(stats['by_status'].keys()),
-                color_discrete_sequence=px.colors.qualitative.Set3
+                color_discrete_sequence=px.colors.qualitative.Set3,
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No data available")
-    
+
     with col2:
         st.subheader("📊 Complaints by Severity")
         if stats.get('by_severity'):
@@ -199,46 +165,43 @@ if page == "📊 Dashboard":
                 x=list(stats['by_severity'].keys()),
                 y=list(stats['by_severity'].values()),
                 color=list(stats['by_severity'].keys()),
-                color_discrete_map={'High': '#ff6b6b', 'Medium': '#ffa500', 'Low': '#4ecdc4'}
+                color_discrete_map={'High': '#ff6b6b', 'Medium': '#ffa500', 'Low': '#4ecdc4'},
             )
             fig.update_layout(showlegend=False, xaxis_title="Severity", yaxis_title="Count")
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No data available")
-    
-    # District Chart
+
     st.subheader("🗺️ Complaints by District")
     if stats.get('by_district'):
         fig = px.bar(
             x=list(stats['by_district'].keys()),
             y=list(stats['by_district'].values()),
             color=list(stats['by_district'].values()),
-            color_continuous_scale='Viridis'
+            color_continuous_scale='Viridis',
         )
         fig.update_layout(showlegend=False, xaxis_title="District", yaxis_title="Count")
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No data available")
-    
-    # Recent Activity
+
     st.markdown("---")
     st.subheader("🕐 Recent Complaints")
-    
+
     recent = services['db'].get_all_complaints()[:5]
-    
     if recent:
-        for complaint in recent:
-            status_class = complaint['status'].lower().replace(' ', '-')
+        for c in recent:
+            status_class = c['status'].lower().replace(' ', '-')
             st.markdown(f"""
             <div class="complaint-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <h4>{complaint['tracking_id']} - {complaint['issue_type']}</h4>
-                        <p><b>Location:</b> {complaint['location']} ({complaint['district']})</p>
-                        <p><b>Severity:</b> {complaint['severity']} | <b>Department:</b> {complaint['department']}</p>
+                        <h4>{c['tracking_id']} — {c['issue_type']}</h4>
+                        <p><b>Location:</b> {c['location']} ({c['district']})</p>
+                        <p><b>Severity:</b> {c['severity']} &nbsp;|&nbsp; <b>Dept:</b> {c['department']}</p>
                     </div>
                     <div>
-                        <span class="status-badge {status_class}">{complaint['status']}</span>
+                        <span class="status-badge {status_class}">{c['status']}</span>
                     </div>
                 </div>
             </div>
@@ -246,66 +209,52 @@ if page == "📊 Dashboard":
     else:
         st.info("No complaints to display")
 
-# ----------------------------
-# MANAGE COMPLAINTS PAGE
-# ----------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+#  MANAGE COMPLAINTS
+# ══════════════════════════════════════════════════════════════════════════════
 elif page == "📋 Manage Complaints":
     st.header("📋 Manage Complaints")
-    
-    # Filters
+
     st.subheader("🔍 Filters")
-    
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         filter_district = st.selectbox(
             "District",
-            ["All"] + ["Lahore", "Karachi", "Islamabad", "Rawalpindi", "Multan", "Faisalabad"]
+            ["All", "Lahore", "Karachi", "Islamabad", "Rawalpindi", "Multan", "Faisalabad"],
         )
-    
     with col2:
         filter_status = st.selectbox(
             "Status",
-            ["All", "Pending", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"]
+            ["All", "Pending", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"],
         )
-    
     with col3:
-        filter_severity = st.selectbox(
-            "Severity",
-            ["All", "High", "Medium", "Low"]
-        )
-    
+        filter_severity = st.selectbox("Severity", ["All", "High", "Medium", "Low"])
     with col4:
         filter_type = st.selectbox(
             "Issue Type",
-            ["All", "Pothole", "Garbage", "Water Leak", "Broken Streetlight", "Other"]
+            ["All", "Pothole", "Garbage", "Water Leak", "Broken Streetlight", "Other"],
         )
-    
-    # Build filters dict
+
     filters = {}
-    if filter_district != "All":
-        filters['district'] = filter_district
-    if filter_status != "All":
-        filters['status'] = filter_status
-    if filter_severity != "All":
-        filters['severity'] = filter_severity
-    if filter_type != "All":
-        filters['issue_type'] = filter_type
-    
-    # Get filtered complaints
+    if filter_district  != "All": filters['district']   = filter_district
+    if filter_status    != "All": filters['status']     = filter_status
+    if filter_severity  != "All": filters['severity']   = filter_severity
+    if filter_type      != "All": filters['issue_type'] = filter_type
+
     complaints = services['db'].get_all_complaints(filters)
-    
     st.markdown(f"### Found {len(complaints)} complaints")
-    
-    # Display complaints
+
+    STATUS_OPTIONS = ["Pending", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"]
+
     if complaints:
         for complaint in complaints:
             with st.expander(
-                f"🎫 {complaint['tracking_id']} - {complaint['issue_type']} | "
+                f"🎫 {complaint['tracking_id']} — {complaint['issue_type']} | "
                 f"{complaint['district']} | {complaint['status']}"
             ):
                 col1, col2 = st.columns([2, 1])
-                
+
                 with col1:
                     st.markdown("### 📝 Complaint Details")
                     st.markdown(f"**Tracking ID:** {complaint['tracking_id']}")
@@ -316,135 +265,150 @@ elif page == "📋 Manage Complaints":
                     st.markdown(f"**Location:** {complaint['location']}")
                     st.markdown(f"**Description:** {complaint['description']}")
                     st.markdown(f"**Submitted:** {complaint['created_at'][:16]}")
-                    
                     if complaint.get('admin_notes'):
                         st.markdown(f"**Admin Notes:** {complaint['admin_notes']}")
-                    
-                    # Show image if available
                     if complaint.get('image_url'):
                         st.image(complaint['image_url'], caption="Evidence Photo", width=400)
-                
+
                 with col2:
                     st.markdown("### ⚙️ Actions")
-                    
-                    # Status update
+
+                    current_idx = STATUS_OPTIONS.index(complaint['status']) \
+                        if complaint['status'] in STATUS_OPTIONS else 0
+
                     new_status = st.selectbox(
                         "Update Status",
-                        ["Pending", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"],
-                        index=["Pending", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"].index(complaint['status']) 
-                            if complaint['status'] in ["Pending", "Under Review", "Assigned", "In Progress", "Resolved", "Rejected"] else 0,
-                        key=f"status_{complaint['tracking_id']}"
+                        STATUS_OPTIONS,
+                        index=current_idx,
+                        key=f"status_{complaint['tracking_id']}",
                     )
-                    
+
                     admin_notes = st.text_area(
                         "Admin Notes",
                         value=complaint.get('admin_notes', ''),
-                        key=f"notes_{complaint['tracking_id']}"
+                        key=f"notes_{complaint['tracking_id']}",
                     )
-                    
-                    if st.button("💾 Update Complaint", key=f"update_{complaint['tracking_id']}", use_container_width=True):
+
+                    if st.button(
+                        "💾 Update Complaint",
+                        key=f"update_{complaint['tracking_id']}",
+                        use_container_width=True,
+                    ):
                         result = services['db'].update_complaint_status(
-                            complaint['tracking_id'],
-                            new_status,
-                            admin_notes
+                            complaint['tracking_id'], new_status, admin_notes
                         )
-                        
+
                         if result:
-                            st.success("✅ Complaint updated successfully!")
-                            
-                            # Send notification
+                            st.success("✅ Complaint updated!")
+
+                            # Log admin action
+                            auth.log_complaint_action(
+                                complaint['tracking_id'],
+                                'update_status',
+                                f"Status changed to {new_status}",
+                            )
+
                             if complaint.get('email'):
                                 services['notifier'].send_status_update(
                                     complaint['email'],
                                     complaint['tracking_id'],
                                     complaint['status'],
                                     new_status,
-                                    admin_notes
+                                    admin_notes,
                                 )
-                                st.success(f"📧 Email notification sent")
-                            
+                                st.success("📧 Email notification sent")
+
                             if complaint.get('phone'):
                                 services['notifier'].send_status_update_sms(
                                     complaint['phone'],
                                     complaint['tracking_id'],
-                                    new_status
+                                    new_status,
                                 )
-                                st.success(f"📱 SMS notification sent")
-                            
+                                st.success("📱 SMS notification sent")
+
                             st.rerun()
                         else:
                             st.error("❌ Failed to update complaint")
-                    
-                    # View history
-                    if st.button("📜 View History", key=f"history_{complaint['tracking_id']}", use_container_width=True):
+
+                    if st.button(
+                        "📜 View History",
+                        key=f"history_{complaint['tracking_id']}",
+                        use_container_width=True,
+                    ):
                         history = services['db'].get_complaint_history(complaint['tracking_id'])
-                        
                         if history:
                             st.markdown("#### Update History")
-                            for update in history:
-                                st.markdown(f"- **{update['status']}** ({update['updated_at'][:16]})")
-                                if update.get('notes'):
-                                    st.markdown(f"  _{update['notes']}_")
+                            for h in history:
+                                st.markdown(f"- **{h['status']}** ({h['updated_at'][:16]})")
+                                if h.get('notes'):
+                                    st.markdown(f"  _{h['notes']}_")
                         else:
                             st.info("No update history")
     else:
         st.info("No complaints found matching the filters")
 
-# ----------------------------
-# ANALYTICS PAGE
-# ----------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+#  ANALYTICS
+# ══════════════════════════════════════════════════════════════════════════════
 elif page == "📈 Analytics":
     st.header("📈 Advanced Analytics")
-    
-    # Get all complaints for analysis
+
     all_complaints = services['db'].get_all_complaints()
-    
+
     if not all_complaints:
         st.info("No data available for analytics")
     else:
-        # Convert to DataFrame
         df = pd.DataFrame(all_complaints)
-        df['created_at'] = pd.to_datetime(df['created_at'])
-        df['date'] = df['created_at'].dt.date
-        
-        # Time period selector
+
+        # ── FIX 2: Timezone-aware datetime comparison ─────────────────────
+        # Supabase stores timestamps with timezone (IST / UTC+5:30).
+        # pd.to_datetime with utc=True converts everything to UTC-aware,
+        # then we compare against an aware cutoff — no more TypeError.
+        df['created_at'] = pd.to_datetime(df['created_at'], utc=True)
+
+        # Convert to IST (UTC+5:30) for display
+        df['created_at_ist'] = df['created_at'].dt.tz_convert('Asia/Kolkata')
+        df['date']           = df['created_at_ist'].dt.date
+        # ─────────────────────────────────────────────────────────────────
+
         col1, col2 = st.columns([3, 1])
-        
         with col1:
             st.subheader("📅 Complaints Over Time")
-        
         with col2:
-            time_range = st.selectbox("Time Range", ["Last 7 Days", "Last 30 Days", "All Time"])
-        
-        # Filter by time range
+            time_range = st.selectbox(
+                "Time Range", ["Last 7 Days", "Last 30 Days", "All Time"]
+            )
+
+        # Timezone-aware cutoff (UTC) for comparison
+        now_utc = datetime.now(timezone.utc)
         if time_range == "Last 7 Days":
-            cutoff_date = datetime.now() - timedelta(days=7)
-            df_filtered = df[df['created_at'] >= cutoff_date]
+            cutoff = now_utc - timedelta(days=7)
+            df_filtered = df[df['created_at'] >= cutoff]
         elif time_range == "Last 30 Days":
-            cutoff_date = datetime.now() - timedelta(days=30)
-            df_filtered = df[df['created_at'] >= cutoff_date]
+            cutoff = now_utc - timedelta(days=30)
+            df_filtered = df[df['created_at'] >= cutoff]
         else:
             df_filtered = df
-        
-        # Timeline chart
+
         daily_counts = df_filtered.groupby('date').size().reset_index(name='count')
-        
-        fig = px.line(
-            daily_counts,
-            x='date',
-            y='count',
-            title='Daily Complaints',
-            labels={'date': 'Date', 'count': 'Number of Complaints'}
-        )
-        fig.update_traces(line_color='#667eea', line_width=3)
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Department Analysis
+
+        if daily_counts.empty:
+            st.info("No complaints in the selected time range.")
+        else:
+            fig = px.line(
+                daily_counts, x='date', y='count',
+                title='Daily Complaints (IST)',
+                labels={'date': 'Date', 'count': 'Number of Complaints'},
+            )
+            fig.update_traces(line_color='#667eea', line_width=3)
+            st.plotly_chart(fig, use_container_width=True)
+
+        # ── Department Analysis ───────────────────────────────────────────
         st.markdown("---")
         st.subheader("🏢 Department-wise Analysis")
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             dept_counts = df['department'].value_counts()
             fig = px.bar(
@@ -452,130 +416,121 @@ elif page == "📈 Analytics":
                 y=dept_counts.values,
                 title="Complaints by Department",
                 color=dept_counts.values,
-                color_continuous_scale='Blues'
+                color_continuous_scale='Blues',
             )
             fig.update_layout(showlegend=False, xaxis_title="Department", yaxis_title="Count")
             st.plotly_chart(fig, use_container_width=True)
-        
+
         with col2:
-            # Resolution rate by department
             dept_status = df.groupby(['department', 'status']).size().unstack(fill_value=0)
-            
             if 'Resolved' in dept_status.columns:
-                dept_status['resolution_rate'] = (dept_status['Resolved'] / dept_status.sum(axis=1) * 100).round(1)
-                
+                dept_status['resolution_rate'] = (
+                    dept_status['Resolved'] / dept_status.sum(axis=1) * 100
+                ).round(1)
                 fig = px.bar(
                     x=dept_status.index,
                     y=dept_status['resolution_rate'],
                     title="Resolution Rate by Department (%)",
                     color=dept_status['resolution_rate'],
-                    color_continuous_scale='Greens'
+                    color_continuous_scale='Greens',
                 )
                 fig.update_layout(showlegend=False, xaxis_title="Department", yaxis_title="Resolution Rate (%)")
                 st.plotly_chart(fig, use_container_width=True)
-        
-        # Issue Type Analysis
+            else:
+                st.info("No resolved complaints yet to show resolution rate.")
+
+        # ── Issue Type Treemap ────────────────────────────────────────────
         st.markdown("---")
         st.subheader("🔧 Issue Type Analysis")
-        
+
         issue_counts = df['issue_type'].value_counts()
-        
         fig = px.treemap(
             names=issue_counts.index,
             parents=[""] * len(issue_counts),
             values=issue_counts.values,
-            title="Issue Types Distribution"
+            title="Issue Types Distribution",
         )
         st.plotly_chart(fig, use_container_width=True)
-        
-        # Heatmap: District vs Issue Type
+
+        # ── District × Issue Type Heatmap ─────────────────────────────────
         st.markdown("---")
         st.subheader("🗺️ District vs Issue Type Heatmap")
-        
+
         heatmap_data = df.groupby(['district', 'issue_type']).size().unstack(fill_value=0)
-        
         fig = px.imshow(
             heatmap_data,
             labels=dict(x="Issue Type", y="District", color="Count"),
             title="Complaint Distribution",
-            color_continuous_scale='YlOrRd'
+            color_continuous_scale='YlOrRd',
         )
         st.plotly_chart(fig, use_container_width=True)
-        
-        # Export Data
+
+        # ── Export ────────────────────────────────────────────────────────
         st.markdown("---")
         st.subheader("📥 Export Data")
-        
-        csv = df.to_csv(index=False)
+
+        # Drop the IST column before exporting so CSV stays clean
+        export_df = df.drop(columns=['created_at_ist'], errors='ignore')
+        csv = export_df.to_csv(index=False)
+
         st.download_button(
             label="📊 Download CSV Report",
             data=csv,
             file_name=f"complaints_report_{datetime.now().strftime('%Y%m%d')}.csv",
             mime="text/csv",
-            use_container_width=True
+            use_container_width=True,
         )
 
-# ----------------------------
-# SETTINGS PAGE
-# ----------------------------
+# ══════════════════════════════════════════════════════════════════════════════
+#  SETTINGS
+# ══════════════════════════════════════════════════════════════════════════════
 elif page == "⚙️ Settings":
     st.header("⚙️ System Settings")
-    
+
     st.subheader("🔔 Notification Settings")
-    
     col1, col2 = st.columns(2)
-    
     with col1:
-        email_enabled = st.checkbox("Enable Email Notifications", value=True)
-        sms_enabled = st.checkbox("Enable SMS Notifications", value=True)
-    
+        st.checkbox("Enable Email Notifications", value=True)
+        st.checkbox("Enable SMS Notifications",   value=True)
     with col2:
-        auto_assign = st.checkbox("Auto-assign to Department", value=True)
-        auto_notify = st.checkbox("Auto-notify on Status Change", value=True)
-    
+        st.checkbox("Auto-assign to Department",    value=True)
+        st.checkbox("Auto-notify on Status Change", value=True)
+
     st.markdown("---")
-    
     st.subheader("🏢 Department Management")
-    
+
     departments = services['db'].get_all_departments()
-    
     if departments:
         for dept in departments:
             with st.expander(dept['name']):
                 st.markdown(f"**Contact:** {dept.get('contact', 'N/A')}")
-                st.markdown(f"**Email:** {dept.get('email', 'N/A')}")
-                st.markdown(f"**Phone:** {dept.get('phone', 'N/A')}")
+                st.markdown(f"**Email:**   {dept.get('email',   'N/A')}")
+                st.markdown(f"**Phone:**   {dept.get('phone',   'N/A')}")
     else:
         st.info("No departments configured")
-    
+
     st.markdown("---")
-    
     st.subheader("📊 System Information")
-    
+
     col1, col2, col3 = st.columns(3)
-    
     with col1:
-        st.metric("Total Users", "1")
-        st.metric("Admin Users", "2")
-    
+        st.metric("Total Users",  "—")
+        st.metric("Admin Users",  "3")
     with col2:
         st.metric("Database Size", "< 1 MB")
-        st.metric("Storage Used", "< 100 MB")
-    
+        st.metric("Storage Used",  "< 100 MB")
     with col3:
-        st.metric("API Calls Today", "47")
-        st.metric("Uptime", "99.9%")
-    
+        st.metric("API Calls Today", "—")
+        st.metric("Uptime",          "99.9%")
+
     if st.button("💾 Save Settings", use_container_width=True):
         st.success("✅ Settings saved successfully!")
 
-# ----------------------------
-# FOOTER
-# ----------------------------
+# ─── Footer ───────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown("""
-<div style="text-align: center; color: #666; padding: 1rem;">
+<div style="text-align:center; color:#666; padding:1rem;">
     <p><b>SmartNaggar AI Admin Dashboard</b></p>
-    <p>Version 1.0 | © 2025 All Rights Reserved</p>
+    <p>Version 2.0 &nbsp;|&nbsp; © 2025 All Rights Reserved</p>
 </div>
 """, unsafe_allow_html=True)
