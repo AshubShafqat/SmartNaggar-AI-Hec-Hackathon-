@@ -32,5 +32,8 @@ plotly
 # HTTP Requests
 requests
 
+# Country/Region handling
+pycountry
+
 # Additional utilities
 python-dotenv
