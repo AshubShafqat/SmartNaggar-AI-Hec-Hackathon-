@@ -1,5 +1,5 @@
 # Core Framework
-streamlit==1.32.2
+streamlit
 
 # Supabase Database
 supabase
@@ -9,19 +9,18 @@ postgrest
 groq
 
 # AI/ML Libraries
-torch==2.2.2
-torchvision==0.17.2
-scikit-learn
-transformers==4.37.2
+torch
+transformers
 accelerate
 sentencepiece
+torchvision
+scikit-learn
 
 # PDF Generation
 fpdf
 
 # Image Processing
 Pillow
-imageio-ffmpeg
 
 # Maps and Location
 geopy
@@ -41,5 +40,7 @@ requests
 # Country/Region handling
 pycountry
 
-# Environment Variables
+# Additional utilities
 python-dotenv
+
+imageio-ffmpeg
