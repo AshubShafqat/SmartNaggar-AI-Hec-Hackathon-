@@ -129,9 +129,14 @@ Email Notification to Citizen
 
 ### 🏠 Citizen Interface
 <img src="citizen.png" width="500"/>
+<img src="complainViaImage.png" width="500"/>
+<img src="mailVerification.png" width="500"/>
+<img src="yourComplainPdf.png" width="500"/>
 
 ### 📊 Admin Dashboard
 <img src="admin.png" width="500"/>
+<img src="csvOfAllComplains.jpeg" width="500"/>
+<img src="adminTracking.png" width="500"/>
 
 ---
 
