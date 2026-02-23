@@ -1,57 +1,137 @@
-# 🧠 SmartNaggar AI - Civic Problem Reporter
+# 🧠 SmartNaggar AI  
+### Intelligent Civic Problem Reporting Platform  
 
-## 🎯 Project Overview
-
-**SmartNaggar AI** is a Generative AI-powered platform that enables citizens to report urban issues like potholes, garbage, water leaks, broken streetlights, and other civic problems using **photo, text, or voice input**.
-
-The AI automatically:
-- 🤖 Interprets and classifies the input
-- 📝 Generates formal complaints
-- 🏢 Assigns to correct departments
-- 📊 Tracks complaint status
-- 📧 Sends email/SMS notifications
+🌐 **Live Application:** https://smartnaggarai.streamlit.app  
 
 ---
 
-## 🌟 Key Features
+## 📌 Overview
 
-### Citizen Side:
-- ✅ Multi-modal input (Text, Camera, Image Upload, Voice)
-- ✅ AI-powered issue classification
-- ✅ Automatic severity detection
-- ✅ Department auto-assignment
-- ✅ Location detection & mapping
-- ✅ PDF complaint generation
-- ✅ Real-time tracking
-- ✅ Email & SMS notifications
+**SmartNaggar AI** is an AI-powered civic issue reporting system developed for **HEC Hackathon 2026**.
+
+The platform enables citizens to digitally report urban issues such as:
+
+- 🛣️ Potholes  
+- 🗑️ Garbage accumulation  
+- 💧 Water leakage  
+- 💡 Broken streetlights  
+- 🚧 Road damage  
+- 🏗️ Public infrastructure issues  
+
+Users can submit complaints using **image, text, or voice input**, and the system intelligently processes, categorizes, stores, and routes the complaint for administrative review.
+
+SmartNaggar AI demonstrates how Artificial Intelligence and cloud infrastructure can modernize traditional civic complaint systems.
+
+---
+
+## 🎯 Problem Statement
+
+Traditional municipal complaint systems are:
+
+- Manual and paper-based  
+- Slow and inefficient  
+- Difficult to track  
+- Lacking transparency  
+
+SmartNaggar AI provides a digital, AI-assisted alternative that improves automation, efficiency, and accountability.
+
+---
+
+## 🚀 Key Features
+
+### 👤 Citizen Interface
+
+
+- ✅ Multi-modal input (Text 📝, Camera 📸, Image Upload, Voice 🎙️)   
+- 🤖 AI-powered issue understanding  
+- 🏷️ Automatic category detection  
+- ⚠️ Severity detection logic  
+- 🗺️ Location detection with interactive map  
+- 🆔 Unique tracking ID generation  
+- 📄 PDF complaint download  
+- 📧 Email confirmation notifications  
+- 🔎 Real-time complaint status tracking  
 - ✅ Bilingual support (English/Urdu)
 
-### Admin Side:
-- ✅ Secure admin authentication
-- ✅ Complaint management dashboard
-- ✅ Status updates with notifications
-- ✅ Advanced analytics & charts
-- ✅ Filter & search functionality
-- ✅ Complaint history tracking
-- ✅ Data export (CSV)
-- ✅ Department management
+---
+
+### 🏢 Admin Dashboard
+
+- 🔐 Secure admin authentication  
+- 📊 Complaint management system  
+- 🔍 Filter by district, severity, or status  
+- ✏️ Complaint status updates  
+- 📈 Analytics dashboard with charts  
+- 📥 CSV data export  
+- 🏢 Department management  
 
 ---
 
-## 🛠️ Tech Stack
+## 🧠 AI Components (Implemented)
 
-| Component | Technology |
-|-----------|-----------|
-| **Frontend** | Streamlit |
-| **Database** | Supabase (PostgreSQL) |
-| **File Storage** | Supabase Storage |
-| **Image AI** | PyTorch (MobileNetV2) |
-| **Voice AI** | OpenAI Whisper |
-| **Text AI** | scikit-learn (TF-IDF + LogReg) |
-| **PDF** | FPDF |
-| **Maps** | Folium + Geopy |
-| **Charts** | Plotly |
-| **Notifications** | SMTP (Email) + Simulated SMS |
+### 🖼 Image Understanding
+- Model: **BLIP (HuggingFace Transformers)**
+- Backend: PyTorch
+- Purpose: Generate contextual captions from uploaded civic images
+
+### 📝 Text Classification
+- Method: TF-IDF Vectorization
+- Algorithm: Logistic Regression (scikit-learn)
+- Purpose: Categorize complaints into predefined issue types
+
+### ✍ Complaint Generation
+- API: Groq LLM API
+- Purpose: Convert user input into structured formal complaint text
+
+### 🎙 Voice Processing
+- Voice converted to text before classification
+- Integrated lightweight speech-to-text pipeline
+
+---
+
+## 🏗 System Workflow
+
+User Input (Image/Text/Voice)  
+↓  
+AI Processing (BLIP + Text Classifier)  
+↓  
+Category & Severity Detection  
+↓  
+Formal Complaint Generation (Groq API)  
+↓  
+Store in Supabase Database  
+↓  
+Admin Review & Status Update  
+↓  
+Email Notification to Citizen  
+
+---
+
+## 🛠 Technology Stack
+
+| Layer | Technology |
+|--------|------------|
+| Frontend | Streamlit |
+| Backend | Supabase (PostgreSQL) |
+| File Storage | Supabase Storage |
+| Image AI | Transformers (BLIP) |
+| ML Backend | PyTorch |
+| Text Classification | scikit-learn |
+| Complaint Generation | Groq API |
+| Mapping | Folium + Geopy |
+| Visualization | Plotly |
+| PDF Engine | FPDF |
+| Notifications | SMTP Email |
+
+---
+
+## 📸 Application Screenshots
+
+### 🏠 Citizen Interface
+<img src="citizen.png" width="500"/>
+
+### 📊 Admin Dashboard
+<img src="admin.png" width="500"/>
 
 ---
 
@@ -242,14 +322,6 @@ See `setup_supabase.sql` for complete schema.
    - Connect GitHub repository
    - Add secrets in Advanced Settings
    - Deploy!
-
-### Deploy to Hugging Face Spaces:
-
-1. Create new Space (Streamlit)
-2. Upload files
-3. Add secrets in Settings
-4. Your app is live!
-
 ---
 
 ## 📊 AI Models
@@ -368,20 +440,6 @@ This project is open source for educational purposes.
 
 ---
 
-## 👥 Team
-
-Built for **HEC Hackathon 2025**
-
----
-
-## 📞 Support
-
-For issues or questions:
-- 📧 Email: support@smartnaggar.ai
-- 🌐 Website: www.smartnaggar.ai
-
----
-
 ## 🙏 Acknowledgments
 
 - OpenAI Whisper for voice recognition
@@ -392,19 +450,14 @@ For issues or questions:
 
 ---
 
-## 💡 Demo Video
+# 👥 Team SmartNaggar Members & Responsibilities
 
-[Add your demo video link here]
-
----
-
-## 📸 Screenshots
-
-### Citizen Interface
-![Citizen Interface](screenshots/citizen.png)
-
-### Admin Dashboard
-![Admin Dashboard](screenshots/admin.png)
+| Name                     | Unique ID | Role Type | Responsibilities |
+|--------------------------|-----------|-----------|------------------|
+| **Ashub Shafqat**        | 60601     | Team Lead / Technical & Deployment | Project architecture, deployment (Streamlit Cloud), final submission, system testing |
+| **Raaid Yousuf**         | 61874     | Technical Development | Core technical implementation, AI model handling, feature development, debugging |
+| **Muhammad Ahmed Hassan**| 61290     | Technical Development | Backend logic, database handling, admin panel support, system optimization |
+| **Hamna Nazar**          | 60564     | Presentation & Documentation | Presentation slides, demo video recording, testing, documentation support |
 
 ---
 
